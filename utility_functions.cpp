@@ -1,4 +1,6 @@
 #include "utility_functions.h"
+#include <random>
+
 
 void Send_Init_Reply(json_object& incoming_message, int message_id){
 
@@ -29,4 +31,23 @@ void Send_Echo_Reply(json_object& incoming_message, int message_id){
     std::get<json_object*>(echo_reply["body"])->operator[]("echo") = std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("echo"));
 
     std::cout<<echo_reply.json_string()<<std::endl;
+}
+
+void Send_Generate_Reply(json_object& incoming_message, int message_id){
+
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<long long> distribution(1LL, (1LL<<62));
+    long long unique_id = distribution(gen);
+
+    json_object generate_reply;
+    generate_reply.list_flag = false;
+    generate_reply["src"] = incoming_message["dest"];
+    generate_reply["dest"] = incoming_message["src"];
+    generate_reply["body"] = new json_object();
+    std::get<json_object*>(generate_reply["body"])->operator[]("id") = unique_id;
+    std::get<json_object*>(generate_reply["body"])->operator[]("type") = "generate_ok";
+    std::get<json_object*>(generate_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
+
+    std::cout<<generate_reply.json_string()<<std::endl;
 }

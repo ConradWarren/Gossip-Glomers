@@ -23,6 +23,8 @@ int main(){
             Send_Init_Reply(incoming_message, message_id);
         }else if(std::get<std::string>((std::get<json_object*>(incoming_message["body"]))->operator[]("type")) == "echo"){
             Send_Echo_Reply(incoming_message, message_id);
+        }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "generate"){
+            Send_Generate_Reply(incoming_message, message_id);
         }
 
         message_id++;

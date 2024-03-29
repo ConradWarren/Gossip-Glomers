@@ -7,5 +7,6 @@ void Send_Init_Reply(json_object& incoming_message, int message_id);
 
 void Send_Echo_Reply(json_object& incoming_message, int message_id);
 
+void Send_Generate_Reply(json_object& incoming_message, int message_id);
 
 #endif //ECHO_BIN_UTILITY_FUNCTIONS_H
