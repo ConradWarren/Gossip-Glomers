@@ -2,6 +2,13 @@
 
 #include <iostream>
 
+json_object::json_object(){
+    list_flag = false;
+}
+json_object::json_object(bool is_list){
+    list_flag = is_list;
+}
+
 json_object::~json_object() {
 
     if (list_flag) {

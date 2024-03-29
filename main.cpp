@@ -8,7 +8,9 @@
 int main(){
 
     std::string input;
-    int message_id = 1;
+    json_object value_store(true);
+
+
     while (std::getline(std::cin, input)){
 
         json_object incoming_message;
@@ -20,14 +22,19 @@ int main(){
         }
 
         if(std::get<std::string>((std::get<json_object*>(incoming_message["body"]))->operator[]("type")) == "init"){
-            Send_Init_Reply(incoming_message, message_id);
+            Send_Init_Reply(incoming_message);
         }else if(std::get<std::string>((std::get<json_object*>(incoming_message["body"]))->operator[]("type")) == "echo"){
-            Send_Echo_Reply(incoming_message, message_id);
+            Send_Echo_Reply(incoming_message);
         }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "generate"){
-            Send_Generate_Reply(incoming_message, message_id);
-        }
+            Send_Generate_Reply(incoming_message);
+        }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "topology"){
 
-        message_id++;
+        }
+        else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "broadcast"){
+            Send_Broadcast_Reply(incoming_message, value_store);
+        }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "read"){
+            Send_Read_Reply(incoming_message, value_store);
+        }
     }
 
 	return 0;

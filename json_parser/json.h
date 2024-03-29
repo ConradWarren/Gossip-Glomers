@@ -23,7 +23,8 @@ public:
     std::variant<long long, double, std::string, json_object*>& operator[](int key){
         return list_arr[key];
     }
-
+    json_object();
+    json_object(bool is_list);
     ~json_object();
 private:
 
