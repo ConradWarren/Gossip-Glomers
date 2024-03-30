@@ -55,7 +55,7 @@ void Send_Broadcast_Reply(json_object& incoming_message, json_object& value_stor
     broadcast_reply["src"] = incoming_message["dest"];
     broadcast_reply["dest"] = incoming_message["src"];
     broadcast_reply["body"] = new json_object();
-    std::get<json_object*>(broadcast_reply["body"])->operator[]("id") = Generate_Unique_ID();
+    std::get<json_object*>(broadcast_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(broadcast_reply["body"])->operator[]("type") = "broadcast_ok";
     std::get<json_object*>(broadcast_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
 
@@ -71,10 +71,22 @@ void Send_Read_Reply(json_object& incoming_message, json_object& value_store){
     read_reply["dest"] = incoming_message["src"];
     read_reply["body"] = new json_object();
     std::get<json_object*>(read_reply["body"])->operator[]("type") = "read_ok";
-    std::get<json_object*>(read_reply["id"])->operator[]("id") = Generate_Unique_ID();
+    std::get<json_object*>(read_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(read_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
-    std::get<json_object*>(read_reply["body"])->operator[]("messages") = &value_store;
-
+    std::get<json_object*>(read_reply["body"])->operator[]("messages") = new json_object(true);
+    std::get<json_object*>(std::get<json_object*>(read_reply["body"])->operator[]("messages"))->list_arr = value_store.list_arr;
     std::cout<<read_reply.json_string()<<std::endl;
-    std::get<json_object*>(read_reply["body"])->operator[]("messages") = nullptr;
+}
+
+void Send_Topology_Reply(json_object& incoming_message){
+
+    json_object topology_reply;
+    topology_reply["src"] = incoming_message["dest"];
+    topology_reply["dest"] = incoming_message["src"];
+    topology_reply["body"] = new json_object();
+    std::get<json_object*>(topology_reply["body"])->operator[]("type") = "topology_ok";
+    std::get<json_object*>(topology_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
+    std::get<json_object*>(topology_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
+
+    std::cout<<topology_reply.json_string()<<std::endl;
 }

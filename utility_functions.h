@@ -13,4 +13,6 @@ void Send_Broadcast_Reply(json_object& incoming_message, json_object& value_stor
 
 void Send_Read_Reply(json_object& incoming_message, json_object& value_store);
 
+void Send_Topology_Reply(json_object& incoming_message);
+
 #endif //ECHO_BIN_UTILITY_FUNCTIONS_H

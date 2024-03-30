@@ -21,6 +21,8 @@ int main(){
             exit(EXIT_FAILURE);
         }
 
+
+
         if(std::get<std::string>((std::get<json_object*>(incoming_message["body"]))->operator[]("type")) == "init"){
             Send_Init_Reply(incoming_message);
         }else if(std::get<std::string>((std::get<json_object*>(incoming_message["body"]))->operator[]("type")) == "echo"){
@@ -28,7 +30,7 @@ int main(){
         }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "generate"){
             Send_Generate_Reply(incoming_message);
         }else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "topology"){
-
+            Send_Topology_Reply(incoming_message);
         }
         else if(std::get<std::string>(std::get<json_object*>(incoming_message["body"])->operator[]("type")) == "broadcast"){
             Send_Broadcast_Reply(incoming_message, value_store);
