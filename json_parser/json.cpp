@@ -243,6 +243,7 @@ std::string json_object::json_string(){
     std::string result;
 
     if(list_flag){
+        if(list_arr.empty()) return "[]";
         result += '[';
         for(const auto& item : list_arr){
             if(const std::string* value = std::get_if<std::string>(&item)){
@@ -258,7 +259,7 @@ std::string json_object::json_string(){
         result.back() = ']';
         return result;
     }else{
-
+        if(key_value_map.empty()) return "{}";
         result += '{';
         for(const auto& item : key_value_map){
             result += '"' + item.first + "\":";

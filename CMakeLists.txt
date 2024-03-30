@@ -8,5 +8,5 @@ add_executable(gg_bin
         json_parser/json.cpp
         utility_functions.cpp)
 
-target_link_libraries(gg_bin)
+
 
