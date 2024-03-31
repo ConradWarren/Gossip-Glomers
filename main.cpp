@@ -4,14 +4,12 @@
 
 #include "json_parser/json.h"
 #include "utility_functions.h"
-
+#include "node_info.h"
 
 int main(){
 
     std::string input;
-    std::vector<std::string> neighboring_nodes;
-    json_object value_store(true);
-
+    node_info node;
 
     while (std::getline(std::cin, input)){
 
@@ -37,12 +35,15 @@ int main(){
         }else if(type == "generate"){
             Send_Generate_Reply(incoming_message);
         }else if(type == "topology"){
-            Send_Topology_Reply(incoming_message, neighboring_nodes);
+            Send_Topology_Reply(incoming_message, node);
         }else if(type == "broadcast"){
-            Send_Broadcast_Reply(incoming_message, value_store, neighboring_nodes);
+            Send_Broadcast_Reply(incoming_message, node);
         }else if(type == "read"){
-            Send_Read_Reply(incoming_message, value_store);
+            Send_Read_Reply(incoming_message, node);
+        }else if(type == "broadcast_ok"){
+            Receive_Broadcast_Response(incoming_message, node);
         }
+
     }
 
 	return 0;
