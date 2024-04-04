@@ -4,7 +4,7 @@
 #include "json_parser/json.h"
 #include "node_info.h"
 
-void Send_Init_Reply(json_object& incoming_message);
+void Send_Init_Reply(json_object& incoming_message, node_info& node);
 
 void Send_Echo_Reply(json_object& incoming_message);
 

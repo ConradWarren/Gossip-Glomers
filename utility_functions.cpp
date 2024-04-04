@@ -9,7 +9,7 @@ long long Generate_Unique_ID(){
     return distribution(gen);
 }
 
-void Send_Init_Reply(json_object& incoming_message){
+void Send_Init_Reply(json_object& incoming_message, node_info& node){
 
     json_object init_reply;
     init_reply["src"] = incoming_message["dest"];
@@ -18,7 +18,6 @@ void Send_Init_Reply(json_object& incoming_message){
     std::get<json_object*>(init_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
     std::get<json_object*>(init_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(init_reply["body"])->operator[]("type") = "init_ok";
-
     std::cout<<init_reply.json_string()<<std::endl;
 }
 
@@ -51,6 +50,11 @@ void Send_Generate_Reply(json_object& incoming_message){
 
 void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
 
+    if(node.messages_received.find(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"))) != node.messages_received.end()){
+        std::cerr<<"Hit messages_received condition "<<incoming_message.json_string()<<std::endl;
+        return;
+    }
+
     json_object broadcast_ok_reply;
     broadcast_ok_reply["src"] = incoming_message["dest"];
     broadcast_ok_reply["dest"] = incoming_message["src"];
@@ -59,7 +63,13 @@ void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
     std::get<json_object*>(broadcast_ok_reply["body"])->operator[]("type") = "broadcast_ok";
     std::get<json_object*>(broadcast_ok_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
 
+    node.messages_received.insert(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id")));
     node.value_store.list_arr.push_back(std::get<json_object*>(incoming_message["body"])->operator[]("message"));
+
+    if(std::get<std::string>(incoming_message["src"])[0] == 'n'){
+        std::cout<<broadcast_ok_reply.json_string()<<std::endl;
+        return;
+    }
 
     json_object broadcast_message;
     broadcast_message["src"] = broadcast_ok_reply["src"];
@@ -107,14 +117,8 @@ void Send_Topology_Reply(json_object& incoming_message, node_info& node){
     std::get<json_object*>(topology_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(topology_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
 
-    std::vector<std::variant<long long, double, std::string, json_object*>>* neighboring_nodes_input = &(std::get<json_object*>(std::get<json_object*>(std::get<json_object*>(incoming_message["body"])->operator[]("topology"))->operator[](std::get<std::string>(incoming_message["dest"])))->list_arr);
-
-    for(int i = 0; i<neighboring_nodes_input->size(); i++){
-        if(std::string* str_ptr = std::get_if<std::string>(&neighboring_nodes_input->operator[](i))){
-            node.neighboring_nodes.push_back(*str_ptr);
-        }else{
-            std::cerr<<"Error: Could not read topology_input as strings"<<std::endl;
-        }
+    for(auto& key_value_pairs : std::get<json_object*>(std::get<json_object*>(incoming_message["body"])->operator[]("topology"))->key_value_map){
+        if(key_value_pairs.first != std::get<std::string>(topology_reply["src"])) node.neighboring_nodes.push_back(key_value_pairs.first);
     }
 
     std::cout<<topology_reply.json_string()<<std::endl;

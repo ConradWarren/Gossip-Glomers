@@ -2,10 +2,14 @@
 #define GG_BIN_NODE_INFO_H
 
 #include "json_parser/json.h"
+#include <queue>
+#include <unordered_set>
+#include <chrono>
 
 class node_info{
 public:
     std::unordered_map<long long, std::string> message_ids_broadcasts_sent_map;
+    std::unordered_set<long long> messages_received;
     std::vector<std::string> neighboring_nodes;
     json_object value_store;
 

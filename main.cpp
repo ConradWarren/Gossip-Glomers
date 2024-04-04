@@ -1,10 +1,12 @@
 #include <iostream>
 #include <string>
 #include <variant>
+#include <chrono>
 
 #include "json_parser/json.h"
 #include "utility_functions.h"
 #include "node_info.h"
+
 
 int main(){
 
@@ -29,7 +31,7 @@ int main(){
         }
 
         if(type == "init"){
-            Send_Init_Reply(incoming_message);
+            Send_Init_Reply(incoming_message, node);
         }else if(type == "echo"){
             Send_Echo_Reply(incoming_message);
         }else if(type == "generate"){
@@ -43,7 +45,6 @@ int main(){
         }else if(type == "broadcast_ok"){
             Receive_Broadcast_Response(incoming_message, node);
         }
-
     }
 
 	return 0;
