@@ -51,7 +51,6 @@ void Send_Generate_Reply(json_object& incoming_message){
 void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
 
     if(node.messages_received.find(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"))) != node.messages_received.end()){
-        std::cerr<<"Hit messages_received condition "<<incoming_message.json_string()<<std::endl;
         return;
     }
 
@@ -77,6 +76,8 @@ void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
     std::get<json_object*>(broadcast_message["body"])->operator[]("type") = "broadcast";
     std::get<json_object*>(broadcast_message["body"])->operator[]("message") = std::get<json_object*>(incoming_message["body"])->operator[]("message");
 
+
+
     for(int i = 0; i<node.neighboring_nodes.size(); i++){
 
         if(node.neighboring_nodes[i] == std::get<std::string>(incoming_message["src"])){
@@ -86,9 +87,9 @@ void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
         broadcast_message["dest"] = node.neighboring_nodes[i];
         std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id") = Generate_Unique_ID();
         node.message_ids_broadcasts_sent_map[std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))] = broadcast_message.json_string();
+        node.message_queue.push({std::chrono::high_resolution_clock::now(), std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))});
         std::cout<<node.message_ids_broadcasts_sent_map[std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))]<<std::endl;
     }
-
     std::cout << broadcast_ok_reply.json_string() << std::endl;
 }
 

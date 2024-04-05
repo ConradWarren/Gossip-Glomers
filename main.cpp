@@ -45,6 +45,27 @@ int main(){
         }else if(type == "broadcast_ok"){
             Receive_Broadcast_Response(incoming_message, node);
         }
+
+
+        int queue_size = node.message_queue.size();
+        for(int i = 0; i<queue_size; i++){
+
+            if(node.message_ids_broadcasts_sent_map.find(node.message_queue.front().second) == node.message_ids_broadcasts_sent_map.end()){
+                node.message_queue.pop();
+                continue;
+            }
+
+            std::chrono::high_resolution_clock::time_point current = std::chrono::high_resolution_clock::now();
+            std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(current - node.message_queue.front().first);
+
+            if(duration.count() <= 500){
+                break;
+            }
+            std::cout<<node.message_ids_broadcasts_sent_map[node.message_queue.front().second]<<std::endl;
+            node.message_queue.push(node.message_queue.front());
+            node.message_queue.pop();
+
+        }
     }
 
 	return 0;
