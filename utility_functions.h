@@ -4,6 +4,8 @@
 #include "json_parser/json.h"
 #include "node_info.h"
 
+long long Generate_Unique_ID();
+
 void Send_Init_Reply(json_object& incoming_message, node_info& node);
 
 void Send_Echo_Reply(json_object& incoming_message);

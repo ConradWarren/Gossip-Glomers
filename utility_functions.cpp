@@ -18,6 +18,8 @@ void Send_Init_Reply(json_object& incoming_message, node_info& node){
     std::get<json_object*>(init_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
     std::get<json_object*>(init_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(init_reply["body"])->operator[]("type") = "init_ok";
+    node.node_id = std::stoi(std::get<std::string>(incoming_message["dest"]).substr(1));
+    node.current_control_node_id = 0;
     std::cout<<init_reply.json_string()<<std::endl;
 }
 
@@ -50,47 +52,67 @@ void Send_Generate_Reply(json_object& incoming_message){
 
 void Send_Broadcast_Reply(json_object& incoming_message, node_info& node){
 
+    json_object broadcast_reply;
+    broadcast_reply["src"] = incoming_message["dest"];
+    broadcast_reply["dest"] = incoming_message["src"];
+    broadcast_reply["body"] = new json_object();
+    std::get<json_object*>(broadcast_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
+    std::get<json_object*>(broadcast_reply["body"])->operator[]("type") = "broadcast_ok";
+    std::get<json_object*>(broadcast_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
+
     if(node.messages_received.find(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"))) != node.messages_received.end()){
+        std::cout<<broadcast_reply.json_string()<<std::endl;
         return;
     }
-
-    json_object broadcast_ok_reply;
-    broadcast_ok_reply["src"] = incoming_message["dest"];
-    broadcast_ok_reply["dest"] = incoming_message["src"];
-    broadcast_ok_reply["body"] = new json_object();
-    std::get<json_object*>(broadcast_ok_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
-    std::get<json_object*>(broadcast_ok_reply["body"])->operator[]("type") = "broadcast_ok";
-    std::get<json_object*>(broadcast_ok_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
-
     node.messages_received.insert(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id")));
-    node.value_store.list_arr.push_back(std::get<json_object*>(incoming_message["body"])->operator[]("message"));
 
-    if(std::get<std::string>(incoming_message["src"])[0] == 'n'){
-        std::cout<<broadcast_ok_reply.json_string()<<std::endl;
+    //if message is a json object we send the broadcast_reply and put the info in out json_object value store.
+    if(std::get_if<json_object*>(&(std::get<json_object*>(incoming_message["body"])->operator[]("message")))){
+
+        for(auto &value : std::get<json_object*>(std::get<json_object*>(incoming_message["body"])->operator[]("message"))->list_arr){
+            if(node.value_store_set.find(std::get<long long>(value)) != node.value_store_set.end()){
+                continue;
+            }
+            node.value_store_set.insert(std::get<long long>(value));
+            node.value_store.list_arr.push_back(value);
+        }
+        std::cout<<broadcast_reply.json_string()<<std::endl;
         return;
     }
 
-    json_object broadcast_message;
-    broadcast_message["src"] = broadcast_ok_reply["src"];
-    broadcast_message["body"] = new json_object();
-    std::get<json_object*>(broadcast_message["body"])->operator[]("type") = "broadcast";
-    std::get<json_object*>(broadcast_message["body"])->operator[]("message") = std::get<json_object*>(incoming_message["body"])->operator[]("message");
-
-
-
-    for(int i = 0; i<node.neighboring_nodes.size(); i++){
-
-        if(node.neighboring_nodes[i] == std::get<std::string>(incoming_message["src"])){
-            continue;
-        }
-
-        broadcast_message["dest"] = node.neighboring_nodes[i];
-        std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id") = Generate_Unique_ID();
-        node.message_ids_broadcasts_sent_map[std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))] = broadcast_message.json_string();
-        node.message_queue.push({std::chrono::high_resolution_clock::now(), std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))});
-        std::cout<<node.message_ids_broadcasts_sent_map[std::get<long long>(std::get<json_object*>(broadcast_message["body"])->operator[]("msg_id"))]<<std::endl;
+    if(node.value_store_set.find(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("message"))) == node.value_store_set.end()){
+        node.value_store_set.insert(std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("message")));
+        node.value_store.list_arr.push_back(std::get<json_object*>(incoming_message["body"])->operator[]("message"));
     }
-    std::cout << broadcast_ok_reply.json_string() << std::endl;
+
+
+    if(std::get<std::string>(incoming_message["src"])[0] == 'n' || node.current_control_node_id == node.node_id){
+
+        if(node.broadcast_value_buffer.list_arr.empty()){
+            node.message_buffer_time_stamp = std::chrono::high_resolution_clock::now();
+        }
+        node.broadcast_value_buffer.list_arr.push_back(std::get<json_object*>(incoming_message["body"])->operator[]("message"));
+        std::cout<<broadcast_reply.json_string()<<std::endl;
+        return;
+    }
+
+    //if it's a piece of data from a client we give it to the control node and put the value in our object store
+    //send reply
+    if(std::get<std::string>(incoming_message["src"])[0] == 'c'){
+
+        long long unique_id = Generate_Unique_ID();
+        json_object* broadcast_to_control_node = new json_object();
+        broadcast_to_control_node->operator[]("src") = incoming_message["dest"];
+        broadcast_to_control_node->operator[]("dest") = "n" + std::to_string(node.current_control_node_id);
+        broadcast_to_control_node->operator[]("body") = new json_object();
+        std::get<json_object*>(broadcast_to_control_node->operator[]("body"))->operator[]("type") = "broadcast";
+        std::get<json_object*>(broadcast_to_control_node->operator[]("body"))->operator[]("message") = std::get<json_object*>(incoming_message["body"])->operator[]("message");
+        std::get<json_object*>(broadcast_to_control_node->operator[]("body"))->operator[]("msg_id") = unique_id;
+
+        std::cout<<broadcast_to_control_node->json_string()<<std::endl;
+        std::cout<<broadcast_reply.json_string()<<std::endl;
+        delete broadcast_to_control_node;
+    }
 }
 
 void Send_Read_Reply(json_object& incoming_message, node_info& node){
@@ -118,8 +140,11 @@ void Send_Topology_Reply(json_object& incoming_message, node_info& node){
     std::get<json_object*>(topology_reply["body"])->operator[]("msg_id") = Generate_Unique_ID();
     std::get<json_object*>(topology_reply["body"])->operator[]("in_reply_to") = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("msg_id"));
 
-    for(auto& key_value_pairs : std::get<json_object*>(std::get<json_object*>(incoming_message["body"])->operator[]("topology"))->key_value_map){
-        if(key_value_pairs.first != std::get<std::string>(topology_reply["src"])) node.neighboring_nodes.push_back(key_value_pairs.first);
+    for(auto& connected_nodes : std::get<json_object*>(std::get<json_object*>(incoming_message["body"])->operator[]("topology"))->key_value_map){
+        if(connected_nodes.first != std::get<std::string>(incoming_message["dest"])){
+            node.neighboring_nodes.push_back(connected_nodes.first);
+        }
+        node.node_count++;
     }
 
     std::cout<<topology_reply.json_string()<<std::endl;
@@ -127,12 +152,5 @@ void Send_Topology_Reply(json_object& incoming_message, node_info& node){
 
 void Receive_Broadcast_Response(json_object& incoming_message, node_info& node){
 
-    long long response_id = std::get<long long>(std::get<json_object*>(incoming_message["body"])->operator[]("in_reply_to"));
 
-    if(node.message_ids_broadcasts_sent_map.find(response_id) == node.message_ids_broadcasts_sent_map.end()){
-        std::cerr<<"Error: getting a message in response to an ID that was never sent"<<std::endl;
-        return;
-    }
-
-    node.message_ids_broadcasts_sent_map.erase(response_id);
 }

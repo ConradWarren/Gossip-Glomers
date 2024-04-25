@@ -1,18 +1,19 @@
 #include <iostream>
 #include <string>
 #include <variant>
-#include <chrono>
 
 #include "json_parser/json.h"
 #include "utility_functions.h"
 #include "node_info.h"
 
+//TODO: Build a separate message_handling method in the node_info class for dropped/partitioned messages
+//TODO: Build a buffer for data, so that we can send multiple peaces of data at once from a single control node.
+//TODO: Build a voting system or something similar for the control node, so if the control nodes gets partitioned we can still send messages in an efficient manner.
 
 int main(){
 
     std::string input;
     node_info node;
-
     while (std::getline(std::cin, input)){
 
         json_object incoming_message;
@@ -46,26 +47,7 @@ int main(){
             Receive_Broadcast_Response(incoming_message, node);
         }
 
-
-        int queue_size = node.message_queue.size();
-        for(int i = 0; i<queue_size; i++){
-
-            if(node.message_ids_broadcasts_sent_map.find(node.message_queue.front().second) == node.message_ids_broadcasts_sent_map.end()){
-                node.message_queue.pop();
-                continue;
-            }
-
-            std::chrono::high_resolution_clock::time_point current = std::chrono::high_resolution_clock::now();
-            std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(current - node.message_queue.front().first);
-
-            if(duration.count() <= 500){
-                break;
-            }
-            std::cout<<node.message_ids_broadcasts_sent_map[node.message_queue.front().second]<<std::endl;
-            node.message_queue.push(node.message_queue.front());
-            node.message_queue.pop();
-
-        }
+        node.handle_sent_messages();
     }
 
 	return 0;
